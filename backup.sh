@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 # Check config
 if [ ! -f "$1" ]; then
     echo 'Config file could not be found'
@@ -9,6 +11,13 @@ fi
 # Load config
 . "$1"
 
+if [[ -z "$MHOST" || -z "$MPASS" || -z "$MHOST" || -z "$FULLS3BUCKET" || -z "$FILTEREDS3BUCKET " ]]; then
+    echo "Please check your config file"
+    exit 1
+fi
+
+./wait-for-it.sh --host=$MHOST --port=3306 -t 20
+
 (
     flock -n -e 200 || exit 1
 
@@ -17,7 +26,7 @@ fi
         (
             while read line; do
                 echo -n "${line}|"
-            done </var/lib/mysql-backup/filter-tables
+            done <./filtered-tables
         ) | sed -e 's/|\+$//g'
     )
 
